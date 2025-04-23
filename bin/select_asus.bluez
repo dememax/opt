@@ -1,0 +1,7 @@
+list
+select 04:D3:B0:34:85:DB
+power off
+select CC:28:AA:69:75:D9
+power on
+default-agent
+list
