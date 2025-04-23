@@ -1,0 +1,8 @@
+# .gitignore for opt dir in my home dir
+# Maxim DEMENTYEV, 2025
+
+bin/SciTE
+include
+lib
+sbin
+share
