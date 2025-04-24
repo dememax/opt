@@ -1,6 +1,12 @@
+# BlueZ script for enabling my external Asus controler
+# (internal Intel controler is so weak)
+# Maxim DEMENTYEV, 2025
+#
 list
+# Select the weak internal Intel controller
 select 04:D3:B0:34:85:DB
 power off
+# Select the strong and advenced external USB Asus controller
 select CC:28:AA:69:75:D9
 power on
 default-agent
