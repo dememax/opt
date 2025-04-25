@@ -4,6 +4,7 @@
 # Copyright (C) 2022-2025 Maxim P. Dementyev <dememax@hotmail.com>
 
 import os, os.path
+import stat
 import subprocess
 import datetime
 
@@ -25,6 +26,19 @@ if not os.path.exists(workdir):
 # Names: Today directory and its content
 ###############################################################
 
+if not os.path.isdir(workdir):
+    print(f"Error! Working direcotry {workdir} isn't a directory!")
+    exit(2)
+
+expected_mode = 'dr-xr-xr-x'
+workdirmode = stat.filemode(os.stat(workdir).st_mode)
+if workdirmode != expected_mode:
+    print(f"Warning! Working direcotry {workdir} has unexpected mode: {workdirmode}, expected {expected_mode}")
+if workdirmode[0] != 'd':
+    print(f"Error! Must be a directory.")
+    exit(3)
+
+# Today dir
 td = datetime.datetime.today()
 today_iso = td.strftime('%Y-%m-%d') # YYYY-MM-DD
 todaydir = os.path.join(workdir, today_iso)
@@ -39,15 +53,26 @@ notesfile = os.path.join(todaydir, 'Notes.rst')
 if os.path.exists(todaydir):
     if not os.path.isdir(todaydir):
         print(f"Error! Today's direcotry {todaydir} isn't a directory!")
-        exit(2)
-else:
-    print(f"Setting write permissions for the Journal folder for creating today's direcotory inside...")
-    res = subprocess.run(["chmod", "u+w", workdir]).returncode
-    if res:
-        print(f"Error! Cannot set write permissions for the Journal folder! chmod status: {res}. Exiting...")
         exit(4)
-    print(f"Creating today's direcotry {todaydir}.")
-    os.mkdir(todaydir) # no check - raises an exception like PermissionError
+else:
+    if workdirmode[2] != 'w':
+        print(f"Changing wrking direcotry {workdir} mode to writable...")
+        res = subprocess.run(['chmod', 'u+w', workdir]).returncode
+        if res:
+            print(f"Error! Cannot make the working direcotry {workdir} writable")
+            exit(5)
+    print(f"Creating today's direcotry {todaydir}...")
+    os.mkdir(todaydir)
+    print(f"Changing back wrking direcotry {workdir} mode to read-only mode...")
+    res = subprocess.run(['chmod', '--recursive',  'a-w', workdir]).returncode
+    if res:
+        print(f"Error! Cannot change back the working direcotry {workdir} read-only")
+        exit(6)
+    print(f"Changing back the today's directory {todaydir} writable...")
+    res = subprocess.run(['chmod', 'u+w', todaydir]).returncode
+    if res:
+        print(f"Error! Cannot change back the today's directory {todaydir} writable")
+        exit(7)
 
 # Result: Today's directory exists. Good access rights are set.
 
@@ -76,12 +101,7 @@ if res:
 if os.path.exists(notesfile):
     if not os.path.isfile(notesfile):
         print(f"Error! Today's notes file {notesfile} isn't a file!")
-        exit(3)
-    print(f"Making the existing today's notes file {notesfile} writable for the user...")
-    res = subprocess.run(["chmod", "u+w", notesfile]).returncode
-    if res:
-        print(f"Error! Cannot make today's notes file writable! chmod status: {res}. Exiting...")
-        exit(10)
+        exit(8)
 else:
     print(f"Creating today's notes file {notesfile}...")
     today_iso_weekday = today_iso + ' ' + td.strftime('%H-%M') + ' ' + td.strftime('%A')
