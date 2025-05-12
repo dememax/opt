@@ -42,8 +42,14 @@ else:
     print(f"Creating today's notes file {notesfile}...")
     today_iso_weekday = today_iso + ' ' + td.strftime('%H-%M') + ' ' + td.strftime('%A')
     with open(notesfile, 'xt') as nf:
+        page_caption_bar = ('=' * len(today_iso_weekday)) + '\n'
+        nf.write(page_caption_bar)
         nf.write(today_iso_weekday + '\n')
-        nf.write(('=' * len(today_iso_weekday)) + '\n')
+        nf.write(page_caption_bar)
+        nf.write('\n')
+        nf.write('*****\n')
+        nf.write('Subj\n')
+        nf.write('***\n')
         nf.write('\n')
         nf.close()
 
