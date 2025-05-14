@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 # Start The Day script
-# Copyright (C) 2022 Maxim P. Dementiev <max@e-soft.ru>
+# Copyright (C) 2022-2025 Maxim P. Dementyev <dememax@hotmail.com>
 
 import os, os.path
 import subprocess
@@ -9,35 +9,79 @@ import datetime
 
 SCITE_EXE = 'SciTE'
 
-# Working dir
+###############################################################
+# Working directory
+###############################################################
 
 workdir = os.path.expanduser("~/Journal")
 
 if not os.path.exists(workdir):
-    print(f"Error! Working direcotry {workdir} doesn't exist!")
-    exit(1)
+    print(f"Error! Working directory {workdir} does not exist!")
+    exit(8)
 
-# Today dir
+# Result: Name is set, the folder exists
+
+###############################################################
+# Names: Today directory and its content
+###############################################################
+
 td = datetime.datetime.today()
 today_iso = td.strftime('%Y-%m-%d') # YYYY-MM-DD
 todaydir = os.path.join(workdir, today_iso)
+notesfile = os.path.join(todaydir, 'Notes.rst')
+
+# Result: all today's names are ready
+
+###############################################################
+# Ready to check today's directory
+###############################################################
 
 if os.path.exists(todaydir):
     if not os.path.isdir(todaydir):
         print(f"Error! Today's direcotry {todaydir} isn't a directory!")
         exit(2)
 else:
-    print(f"Creating today's direcotry {todaydir}...")
-    os.mkdir(todaydir)
+    print(f"Creating today's direcotry {todaydir}.")
+    print(f"Setting write permissions for the Journal folder...")
+    res = subprocess.run(["chmod", "u+w", workdir]).returncode
+    if res:
+        print(f"Error! Cannot set write permissions for the Journal folder! chmod status: {res}. Exiting...")
+        exit(4)
+    os.mkdir(todaydir) # no check - raises an exception like PermissionError
 
-# Notes file: reStructuredText with the title for to be included in contents
+# Result: Today's directory exists. Good access rights are set.
 
-notesfile = os.path.join(todaydir, 'Notes.rst')
+###############################################################
+# Ensure access rights for todaydir
+###############################################################
+
+# Making all contents of Journal read-only
+res = subprocess.run(["chmod", "a-w", "-R", workdir]).returncode
+if res:
+    print(f"Error! Cannot make the Journal folder read-only! Status of chmod {res}. Exiting...")
+    exit(5)
+
+# Make the today's dir writable for the user
+res = subprocess.run(["chmod", "u+w", todaydir]).returncode
+if res:
+    print(f"Error! Cannot make today's dir writable! Status of chmod {res}. Exiting...")
+    exit(7)
+
+# Result: Todaydir exists, it has good access rights
+
+###############################################################
+# Notes file: reStructuredText with a title to be included in contents
+###############################################################
 
 if os.path.exists(notesfile):
     if not os.path.isfile(notesfile):
         print(f"Error! Today's notes file {notesfile} isn't a file!")
         exit(3)
+    # Make the today's dir writable for the user
+    res = subprocess.run(["chmod", "u+w", notesfile]).returncode
+    if res:
+        print(f"Error! Cannot make today's notes file writable! chmod status: {res}. Exiting...")
+        exit(10)
 else:
     print(f"Creating today's notes file {notesfile}...")
     today_iso_weekday = today_iso + ' ' + td.strftime('%H-%M') + ' ' + td.strftime('%A')
@@ -53,14 +97,29 @@ else:
         nf.write('\n')
         nf.close()
 
+# Result: Notes file exists with correct access rights.
+
+###############################################################
+# Go foreground with a child process: we split and exit the main application (foregraound)
+###############################################################
+
 if os.fork():
     # parent: output the result
     print(f'Child is run for {notesfile}.')
     exit(0) # all is ok
+
+###############################################################
+# Launch the editor, wait and correct access rights after
+###############################################################
 
 # child: lunch the editor on it
 print(f'Running editor for {notesfile}...')
 res = subprocess.run([SCITE_EXE, notesfile]).returncode
 print() # force the new line
 print(f'Result for {notesfile} is {res}')
+print(f'Protecting {todaydir} directory...')
+res = subprocess.run(["chmod", "a-w", "-R", todaydir]).returncode
+if res:
+    print(f"Error! Cannot make the today's folder {todaydir} read-only! Status of chmod {res}. Exiting...")
+    exit(6)
 exit(res)
