@@ -41,12 +41,12 @@ if os.path.exists(todaydir):
         print(f"Error! Today's direcotry {todaydir} isn't a directory!")
         exit(2)
 else:
-    print(f"Creating today's direcotry {todaydir}.")
-    print(f"Setting write permissions for the Journal folder...")
+    print(f"Setting write permissions for the Journal folder for creating today's direcotory inside...")
     res = subprocess.run(["chmod", "u+w", workdir]).returncode
     if res:
         print(f"Error! Cannot set write permissions for the Journal folder! chmod status: {res}. Exiting...")
         exit(4)
+    print(f"Creating today's direcotry {todaydir}.")
     os.mkdir(todaydir) # no check - raises an exception like PermissionError
 
 # Result: Today's directory exists. Good access rights are set.
@@ -55,19 +55,19 @@ else:
 # Ensure access rights for todaydir
 ###############################################################
 
-# Making all contents of Journal read-only
+print(f"Making all contents of Journal read-only...")
 res = subprocess.run(["chmod", "a-w", "-R", workdir]).returncode
 if res:
     print(f"Error! Cannot make the Journal folder read-only! Status of chmod {res}. Exiting...")
     exit(5)
 
-# Make the today's dir writable for the user
+print(f"Make the today's dir {todaydir} writable for the user...")
 res = subprocess.run(["chmod", "u+w", todaydir]).returncode
 if res:
     print(f"Error! Cannot make today's dir writable! Status of chmod {res}. Exiting...")
     exit(7)
 
-# Result: Todaydir exists, it has good access rights
+# Result: Todaydir exists, it has good access rights, all other content of Journal is protected
 
 ###############################################################
 # Notes file: reStructuredText with a title to be included in contents
@@ -77,7 +77,7 @@ if os.path.exists(notesfile):
     if not os.path.isfile(notesfile):
         print(f"Error! Today's notes file {notesfile} isn't a file!")
         exit(3)
-    # Make the today's dir writable for the user
+    print(f"Making the existing today's notes file {notesfile} writable for the user...")
     res = subprocess.run(["chmod", "u+w", notesfile]).returncode
     if res:
         print(f"Error! Cannot make today's notes file writable! chmod status: {res}. Exiting...")
@@ -105,15 +105,14 @@ else:
 
 if os.fork():
     # parent: output the result
-    print(f'Child is run for {notesfile}.')
+    print(f'In the parent with PID {os.getpid()} and PPID {os.getppid()}. Exiting, letting the child run {SCITE_EXE} for {notesfile}... ')
     exit(0) # all is ok
 
 ###############################################################
 # Launch the editor, wait and correct access rights after
 ###############################################################
 
-# child: lunch the editor on it
-print(f'Running editor for {notesfile}...')
+print(f'In the child with PID {os.getpid()} and PPID {os.getppid()}. Running the editor {SCITE_EXE} for {notesfile}...')
 res = subprocess.run([SCITE_EXE, notesfile]).returncode
 print() # force the new line
 print(f'Result for {notesfile} is {res}')
@@ -122,4 +121,5 @@ res = subprocess.run(["chmod", "a-w", "-R", todaydir]).returncode
 if res:
     print(f"Error! Cannot make the today's folder {todaydir} read-only! Status of chmod {res}. Exiting...")
     exit(6)
+print(f'Exiting the child with PID {os.getpid()} and PPID {os.getppid()}. The notes file was {notesfile}...')
 exit(res)
