@@ -18,7 +18,7 @@ workdir = os.path.expanduser("~/Journal")
 
 if not os.path.exists(workdir):
     print(f"Error! Working directory {workdir} does not exist!")
-    exit(8)
+    exit(10)
 
 # Result: Name is set, the folder exists
 
@@ -62,17 +62,7 @@ else:
             print(f"Error! Cannot make the working direcotry {workdir} writable")
             exit(5)
     print(f"Creating today's direcotry {todaydir}...")
-    os.mkdir(todaydir)
-    print(f"Changing back wrking direcotry {workdir} mode to read-only mode...")
-    res = subprocess.run(['chmod', '--recursive',  'a-w', workdir]).returncode
-    if res:
-        print(f"Error! Cannot change back the working direcotry {workdir} read-only")
-        exit(6)
-    print(f"Changing back the today's directory {todaydir} writable...")
-    res = subprocess.run(['chmod', 'u+w', todaydir]).returncode
-    if res:
-        print(f"Error! Cannot change back the today's directory {todaydir} writable")
-        exit(7)
+    os.mkdir(todaydir) # no check - raises an exception like PermissionError, works like exit(1)
 
 # Result: Today's directory exists. Good access rights are set.
 
@@ -84,7 +74,7 @@ print(f"Making all contents of Journal read-only...")
 res = subprocess.run(["chmod", "a-w", "-R", workdir]).returncode
 if res:
     print(f"Error! Cannot make the Journal folder read-only! Status of chmod {res}. Exiting...")
-    exit(5)
+    exit(9)
 
 print(f"Make the today's dir {todaydir} writable for the user...")
 res = subprocess.run(["chmod", "u+w", todaydir]).returncode
