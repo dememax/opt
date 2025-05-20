@@ -92,6 +92,12 @@ if os.path.exists(notesfile):
     if not os.path.isfile(notesfile):
         print(f"Error! Today's notes file {notesfile} isn't a file!")
         exit(8)
+    print(f"Making the existing today's notes file {notesfile} writable for the user...")
+    res = subprocess.run(["chmod", "u+w", notesfile]).returncode
+    if res:
+        print(f"Error! Cannot make today's notes file writable! chmod status: {res}. Exiting...")
+        exit(11)
+
 else:
     print(f"Creating today's notes file {notesfile}...")
     today_iso_weekday = today_iso + ' ' + td.strftime('%H-%M') + ' ' + td.strftime('%A')
