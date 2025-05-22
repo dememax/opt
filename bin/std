@@ -20,25 +20,25 @@ if not os.path.exists(workdir):
     print(f"Error! Working directory {workdir} does not exist!")
     exit(10)
 
-# Result: Name is set, the folder exists
+# Result: Working directory name is set, the folder exists
 
 ###############################################################
 # Names: Today directory and its content
 ###############################################################
 
 if not os.path.isdir(workdir):
-    print(f"Error! Working direcotry {workdir} isn't a directory!")
+    print(f"Error! Working directory {workdir} is not a directory!")
     exit(2)
 
 expected_mode = 'dr-xr-xr-x'
 workdirmode = stat.filemode(os.stat(workdir).st_mode)
 if workdirmode != expected_mode:
-    print(f"Warning! Working direcotry {workdir} has unexpected mode: {workdirmode}, expected {expected_mode}")
+    print(f"Warning! Working directory {workdir} has an unexpected mode: {workdirmode}, expected {expected_mode}")
 if workdirmode[0] != 'd':
     print(f"Error! Must be a directory.")
     exit(3)
 
-# Today dir
+# Today directory
 td = datetime.datetime.today()
 today_iso = td.strftime('%Y-%m-%d') # YYYY-MM-DD
 todaydir = os.path.join(workdir, today_iso)
@@ -52,19 +52,19 @@ notesfile = os.path.join(todaydir, 'Notes.rst')
 
 if os.path.exists(todaydir):
     if not os.path.isdir(todaydir):
-        print(f"Error! Today's direcotry {todaydir} isn't a directory!")
+        print(f"Error! Today's directory {todaydir} is not a directory!")
         exit(4)
 else:
     if workdirmode[2] != 'w':
-        print(f"Changing wrking direcotry {workdir} mode to writable...")
+        print(f"Changing working directory {workdir} mode to writable...")
         res = subprocess.run(['chmod', 'u+w', workdir]).returncode
         if res:
-            print(f"Error! Cannot make the working direcotry {workdir} writable")
+            print(f"Error! Cannot make the working directory {workdir} writable")
             exit(5)
-    print(f"Creating today's direcotry {todaydir}...")
+    print(f"Creating today's directory {todaydir}...")
     os.mkdir(todaydir) # no check - raises an exception like PermissionError, works like exit(1)
 
-# Result: Today's directory exists. Good access rights are set.
+# Result: Today's directory exists with correct access rights.
 
 ###############################################################
 # Ensure access rights for todaydir
@@ -73,16 +73,16 @@ else:
 print(f"Making all contents of Journal read-only...")
 res = subprocess.run(["chmod", "a-w", "-R", workdir]).returncode
 if res:
-    print(f"Error! Cannot make the Journal folder read-only! Status of chmod {res}. Exiting...")
+    print(f"Error! Cannot make the Journal folder read-only! chmod status: {res}. Exiting...")
     exit(9)
 
-print(f"Make the today's dir {todaydir} writable for the user...")
+print(f"Making today's directory {todaydir} writable for the user...")
 res = subprocess.run(["chmod", "u+w", todaydir]).returncode
 if res:
-    print(f"Error! Cannot make today's dir writable! Status of chmod {res}. Exiting...")
+    print(f"Error! Cannot make today's directory writable! chmod status: {res}. Exiting...")
     exit(7)
 
-# Result: Todaydir exists, it has good access rights, all other content of Journal is protected
+# Result: Today's directory exists with correct access rights; other Journal content is protected.
 
 ###############################################################
 # Notes file: reStructuredText with a title to be included in contents
@@ -90,7 +90,7 @@ if res:
 
 if os.path.exists(notesfile):
     if not os.path.isfile(notesfile):
-        print(f"Error! Today's notes file {notesfile} isn't a file!")
+        print(f"Error! Today's notes file {notesfile} is not a file!")
         exit(8)
     print(f"Making the existing today's notes file {notesfile} writable for the user...")
     res = subprocess.run(["chmod", "u+w", notesfile]).returncode
