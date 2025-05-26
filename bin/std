@@ -112,7 +112,7 @@ else:
 
 if os.fork():
     # parent: output the result
-    print(f'In the parent with PID {os.getpid()} and PPID {os.getppid()}. Exiting, letting the child run editor '{EDITOR_EXE}' for '{notesfile}'... ')
+    print(f"In the parent with PID {os.getpid()} and PPID {os.getppid()}. Exiting, letting the child run editor '{EDITOR_EXE}' for '{notesfile}'... ")
     exit(0) # all is ok
 
 ###############################################################
@@ -122,11 +122,11 @@ if os.fork():
 print(f"In the child with PID {os.getpid()} and PPID {os.getppid()}. Running the editor '{EDITOR_EXE}' for '{notesfile}'...")
 res = subprocess.run([EDITOR_EXE, notesfile]).returncode
 print() # force the new line
-print(f'Result for {notesfile} is {res}')
-print(f'Protecting {todaydir} directory...')
+print(f"Result of running the editor '{EDITOR_EXE}' for '{notesfile}' is {res}")
+print(f"Protecting today's '{todaydir}' directory...")
 res = subprocess.run(["chmod", "a-w", "-R", todaydir]).returncode
 if res:
     print(f"Error! Cannot make the today's folder '{todaydir}' read-only! Status of chmod {res}. Exiting...")
     exit(6)
-print(f'Exiting the child with PID {os.getpid()} and PPID {os.getppid()}. The notes file was '{notesfile}'...')
+print(f"Exiting the child with PID {os.getpid()} and PPID {os.getppid()}. The notes file was '{notesfile}'...")
 exit(res)
