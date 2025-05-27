@@ -46,7 +46,7 @@ if os.path.exists(todaydir):
         exit(4)
 else:
     # Does the owner have write permission?
-    if not (journal_dir_file_mode & stat.S_IWUSR):
+    if not (journal_dir_st_mode & stat.S_IWUSR):
         print(f"Changing journal directory '{journal_dir_path}' mode to writable...")
         res = subprocess.run(['chmod', 'u+w', journal_dir_path]).returncode
         if res:
