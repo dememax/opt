@@ -130,3 +130,9 @@ if res:
     exit(6)
 print(f"Exiting the child with PID {os.getpid()} and PPID {os.getppid()}. The notes file was '{notesfile}'...")
 exit(res)
+
+# TODO:
+# * Put all operations into separate functions with clear names
+# * Add function to sync journal with journals on external drives
+# * Add function to add toctree to other docs in todays folder
+# * Add function to add images and other files into notes rst
