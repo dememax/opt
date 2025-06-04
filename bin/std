@@ -137,3 +137,4 @@ exit(res)
 # * Add function to add toctree to other docs in todays folder
 # * Add function to add images and other files into notes rst
 # * Add function to add links to previous and next days in notes rst
+# * Add possibility to put the content of user's file instead of the first section "Subj"
