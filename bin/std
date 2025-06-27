@@ -12,127 +12,114 @@ EDITOR_EXE = 'SciTE'
 ST_MODE_JOURNAL_FILEMODE_NORMAL = 'dr-xr-xr-x'
 JOURNAL_DIR_SIMPLE_NAME = "Journal"
 
-###############################################################
-# Journal directory and access rights
-###############################################################
+def check_journal_dir():
+    """Check Journal directory and access rights."""
+    journal_dir_path = os.path.expanduser(f"~/{JOURNAL_DIR_SIMPLE_NAME}")
+    journal_dir_st_mode = os.stat(journal_dir_path).st_mode
+    journal_dir_file_mode = stat.filemode(journal_dir_st_mode)
 
-journal_dir_path = os.path.expanduser(f"~/{JOURNAL_DIR_SIMPLE_NAME}")
+    if not stat.S_ISDIR(journal_dir_st_mode):
+        print(f"Error! Journal path '{journal_dir_path}' must be a directory. Got: '{journal_dir_file_mode}'.")
+        exit(3)
 
-# no check - raises an exception FileNotFoundError: [Errno 2] No such file or directory: '...'
-journal_dir_st_mode = os.stat(journal_dir_path).st_mode # if any exception, works like exit(1)
-journal_dir_file_mode = stat.filemode(journal_dir_st_mode)
+    if journal_dir_file_mode != ST_MODE_JOURNAL_FILEMODE_NORMAL:
+        print(f"Warning! Journal path '{journal_dir_path}' has an unexpected mode: {journal_dir_file_mode}, expected {ST_MODE_JOURNAL_FILEMODE_NORMAL}")
 
-if not stat.S_ISDIR(journal_dir_st_mode):
-    print(f"Error! Journal path '{journal_dir_path}' must be a directory. Got: '{journal_dir_file_mode}'.")
-    exit(3)
+    return journal_dir_path, journal_dir_st_mode
 
-if journal_dir_file_mode != ST_MODE_JOURNAL_FILEMODE_NORMAL:
-    print(f"Warning! Journal path '{journal_dir_path}' has an unexpected mode: {journal_dir_file_mode}, expected {ST_MODE_JOURNAL_FILEMODE_NORMAL}")
+def prepare_today_dir(journal_dir_path, journal_dir_st_mode):
+    """Prepare today's directory and its content."""
+    td = datetime.datetime.today()
+    today_iso = td.strftime('%Y-%m-%d')
+    todaydir = os.path.join(journal_dir_path, today_iso)
+    notesfile = os.path.join(todaydir, 'Notes.rst')
 
-# Result: Journal directory name is set, the folder exists, we don't bother about current access rights
+    if os.path.exists(todaydir):
+        if not os.path.isdir(todaydir):
+            print(f"Error! Today's directory {todaydir} is not a directory!")
+            exit(4)
+    else:
+        if not (journal_dir_st_mode & stat.S_IWUSR):
+            print(f"Changing journal directory '{journal_dir_path}' mode to writable...")
+            res = subprocess.run(['chmod', 'u+w', journal_dir_path]).returncode
+            if res:
+                print(f"Error! Cannot make the journal directory '{journal_dir_path}' writable")
+                exit(5)
+        print(f"Creating today's directory '{todaydir}'...")
+        os.mkdir(todaydir)
+    return td, today_iso, todaydir, notesfile
 
-###############################################################
-# Names: Today directory and its content
-###############################################################
-
-td = datetime.datetime.today()
-today_iso = td.strftime('%Y-%m-%d') # YYYY-MM-DD
-todaydir = os.path.join(journal_dir_path, today_iso)
-notesfile = os.path.join(todaydir, 'Notes.rst')
-
-if os.path.exists(todaydir):
-    if not os.path.isdir(todaydir):
-        print(f"Error! Today's directory {todaydir} is not a directory!")
-        exit(4)
-else:
-    # Does the owner have write permission?
-    if not (journal_dir_st_mode & stat.S_IWUSR):
-        print(f"Changing journal directory '{journal_dir_path}' mode to writable...")
-        res = subprocess.run(['chmod', 'u+w', journal_dir_path]).returncode
-        if res:
-            print(f"Error! Cannot make the journal directory '{journal_dir_path}' writable")
-            exit(5)
-    print(f"Creating today's directory '{todaydir}'...")
-    os.mkdir(todaydir) # no check - raises an exception like PermissionError, works like exit(1)
-
-# Result: Today's directory exists with correct access rights.
-
-###############################################################
-# Ensure access rights for todaydir
-###############################################################
-
-print(f"Making all contents of Journal directory '{journal_dir_path}' read-only...")
-res = subprocess.run(["chmod", "a-w", "-R", journal_dir_path]).returncode
-if res:
-    print(f"Error! Cannot make the Journal folder '{journal_dir_path}' read-only! chmod status: {res}. Exiting...")
-    exit(9)
-
-print(f"Making today's directory '{todaydir}' writable for the user...")
-res = subprocess.run(["chmod", "u+w", todaydir]).returncode
-if res:
-    print(f"Error! Cannot make today's directory '{todaydir}' writable! chmod status: {res}. Exiting...")
-    exit(7)
-
-# Result: Today's directory exists with correct access rights; other Journal content is protected.
-
-###############################################################
-# Notes file: reStructuredText with a title to be included in contents
-###############################################################
-
-if os.path.exists(notesfile):
-    if not os.path.isfile(notesfile):
-        print(f"Error! Today's notes file {notesfile} is not a file!")
-        exit(8)
-    print(f"Making the existing today's notes file {notesfile} writable for the user...")
-    res = subprocess.run(["chmod", "u+w", notesfile]).returncode
+def set_todaydir_access(journal_dir_path, todaydir):
+    """Ensure access rights for todaydir."""
+    print(f"Making all contents of Journal directory '{journal_dir_path}' read-only...")
+    res = subprocess.run(["chmod", "a-w", "-R", journal_dir_path]).returncode
     if res:
-        print(f"Error! Cannot make today's notes file writable! chmod status: {res}. Exiting...")
-        exit(11)
+        print(f"Error! Cannot make the Journal folder '{journal_dir_path}' read-only! chmod status: {res}. Exiting...")
+        exit(9)
 
-else:
-    print(f"Creating today's notes file {notesfile}...")
-    today_iso_weekday = today_iso + ' ' + td.strftime('%H-%M') + ' ' + td.strftime('%A')
-    with open(notesfile, 'xt') as nf:
-        page_caption_bar = ('#' * len(today_iso_weekday)) + '\n'
-        nf.write(page_caption_bar)
-        nf.write(today_iso_weekday + '\n')
-        nf.write(page_caption_bar)
-        nf.write('\n')
-        nf.write('*****\n')
-        nf.write('Subj\n')
-        nf.write('***\n')
-        nf.write('\n')
-        nf.close()
+    print(f"Making today's directory '{todaydir}' writable for the user...")
+    res = subprocess.run(["chmod", "u+w", todaydir]).returncode
+    if res:
+        print(f"Error! Cannot make today's directory '{todaydir}' writable! chmod status: {res}. Exiting...")
+        exit(7)
 
-# Result: Notes file exists with correct access rights.
+def prepare_notes_file(notesfile, today_iso, td):
+    """Ensure notes file exists and is writable, or create it."""
+    if os.path.exists(notesfile):
+        if not os.path.isfile(notesfile):
+            print(f"Error! Today's notes file {notesfile} is not a file!")
+            exit(8)
+        print(f"Making the existing today's notes file {notesfile} writable for the user...")
+        res = subprocess.run(["chmod", "u+w", notesfile]).returncode
+        if res:
+            print(f"Error! Cannot make today's notes file writable! chmod status: {res}. Exiting...")
+            exit(11)
+    else:
+        print(f"Creating today's notes file {notesfile}...")
+        today_iso_weekday = today_iso + ' ' + td.strftime('%H-%M') + ' ' + td.strftime('%A')
+        with open(notesfile, 'xt') as nf:
+            page_caption_bar = ('#' * len(today_iso_weekday)) + '\n'
+            nf.write(page_caption_bar)
+            nf.write(today_iso_weekday + '\n')
+            nf.write(page_caption_bar)
+            nf.write('\n')
+            nf.write('*****\n')
+            nf.write('Subj\n')
+            nf.write('***\n')
+            nf.write('\n')
 
-###############################################################
-# Go foreground with a child process: we split and exit the main application (foregraound)
-###############################################################
+def fork_and_exit_parent(notesfile):
+    """Fork and exit parent process."""
+    if os.fork():
+        print(f"In the parent with PID {os.getpid()} and PPID {os.getppid()}. Exiting, letting the child run editor '{EDITOR_EXE}' for '{notesfile}'... ")
+        exit(0)
 
-if os.fork():
-    # parent: output the result
-    print(f"In the parent with PID {os.getpid()} and PPID {os.getppid()}. Exiting, letting the child run editor '{EDITOR_EXE}' for '{notesfile}'... ")
-    exit(0) # all is ok
+def run_editor_and_protect(todaydir, notesfile):
+    """Run the editor, wait, and correct access rights after."""
+    print(f"In the child with PID {os.getpid()} and PPID {os.getppid()}. Running the editor '{EDITOR_EXE}' for '{notesfile}'...")
+    res = subprocess.run([EDITOR_EXE, notesfile]).returncode
+    print()
+    print(f"Result of running the editor '{EDITOR_EXE}' for '{notesfile}' is {res}")
+    print(f"Protecting today's '{todaydir}' directory...")
+    res2 = subprocess.run(["chmod", "a-w", "-R", todaydir]).returncode
+    if res2:
+        print(f"Error! Cannot make the today's folder '{todaydir}' read-only! Status of chmod {res2}. Exiting...")
+        exit(6)
+    print(f"Exiting the child with PID {os.getpid()} and PPID {os.getppid()}. The notes file was '{notesfile}'...")
+    exit(res)
 
-###############################################################
-# Launch the editor, wait and correct access rights after
-###############################################################
+def main():
+    journal_dir_path, journal_dir_st_mode = check_journal_dir()
+    td, today_iso, todaydir, notesfile = prepare_today_dir(journal_dir_path, journal_dir_st_mode)
+    set_todaydir_access(journal_dir_path, todaydir)
+    prepare_notes_file(notesfile, today_iso, td)
+    fork_and_exit_parent(notesfile)
+    run_editor_and_protect(todaydir, notesfile)
 
-print(f"In the child with PID {os.getpid()} and PPID {os.getppid()}. Running the editor '{EDITOR_EXE}' for '{notesfile}'...")
-res = subprocess.run([EDITOR_EXE, notesfile]).returncode
-print() # force the new line
-print(f"Result of running the editor '{EDITOR_EXE}' for '{notesfile}' is {res}")
-print(f"Protecting today's '{todaydir}' directory...")
-res = subprocess.run(["chmod", "a-w", "-R", todaydir]).returncode
-if res:
-    print(f"Error! Cannot make the today's folder '{todaydir}' read-only! Status of chmod {res}. Exiting...")
-    exit(6)
-print(f"Exiting the child with PID {os.getpid()} and PPID {os.getppid()}. The notes file was '{notesfile}'...")
-exit(res)
+if __name__ == "__main__":
+    main()
 
 # TODO:
-# * Put all operations into separate functions with clear names
 # * Add function to sync journal with journals on external drives
 # * Add function to add toctree to other docs in todays folder
 # * Add function to add images and other files into notes rst
