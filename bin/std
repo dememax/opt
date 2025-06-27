@@ -15,7 +15,8 @@ JOURNAL_DIR_SIMPLE_NAME = "Journal"
 def check_journal_dir():
     """Check Journal directory and access rights."""
     journal_dir_path = os.path.expanduser(f"~/{JOURNAL_DIR_SIMPLE_NAME}")
-    journal_dir_st_mode = os.stat(journal_dir_path).st_mode
+    # no check - raises an exception FileNotFoundError: [Errno 2] No such file or directory: '...'
+    journal_dir_st_mode = os.stat(journal_dir_path).st_mode # if any exception, works like exit(1)
     journal_dir_file_mode = stat.filemode(journal_dir_st_mode)
 
     if not stat.S_ISDIR(journal_dir_st_mode):
@@ -39,14 +40,14 @@ def prepare_today_dir(journal_dir_path, journal_dir_st_mode):
             print(f"Error! Today's directory {todaydir} is not a directory!")
             exit(4)
     else:
-        if not (journal_dir_st_mode & stat.S_IWUSR):
+        if not (journal_dir_st_mode & stat.S_IWUSR): # Does the owner have write permission?
             print(f"Changing journal directory '{journal_dir_path}' mode to writable...")
             res = subprocess.run(['chmod', 'u+w', journal_dir_path]).returncode
             if res:
                 print(f"Error! Cannot make the journal directory '{journal_dir_path}' writable")
                 exit(5)
         print(f"Creating today's directory '{todaydir}'...")
-        os.mkdir(todaydir)
+        os.mkdir(todaydir) # no check - raises an exception like PermissionError, works like exit(1)
     return td, today_iso, todaydir, notesfile
 
 def set_todaydir_access(journal_dir_path, todaydir):
@@ -101,19 +102,24 @@ def run_editor_and_protect(todaydir, notesfile):
     print()
     print(f"Result of running the editor '{EDITOR_EXE}' for '{notesfile}' is {res}")
     print(f"Protecting today's '{todaydir}' directory...")
-    res2 = subprocess.run(["chmod", "a-w", "-R", todaydir]).returncode
-    if res2:
-        print(f"Error! Cannot make the today's folder '{todaydir}' read-only! Status of chmod {res2}. Exiting...")
+    res = subprocess.run(["chmod", "a-w", "-R", todaydir]).returncode
+    if res:
+        print(f"Error! Cannot make the today's folder '{todaydir}' read-only! Status of chmod {res}. Exiting...")
         exit(6)
     print(f"Exiting the child with PID {os.getpid()} and PPID {os.getppid()}. The notes file was '{notesfile}'...")
     exit(res)
 
 def main():
     journal_dir_path, journal_dir_st_mode = check_journal_dir()
+    # Journal directory name is set, the folder exists, we don't bother about current access rights
     td, today_iso, todaydir, notesfile = prepare_today_dir(journal_dir_path, journal_dir_st_mode)
+    # Today's directory exists with correct access rights.
     set_todaydir_access(journal_dir_path, todaydir)
+    # Today's directory exists with correct access rights; other Journal content is protected.
     prepare_notes_file(notesfile, today_iso, td)
+    # Notes file exists with correct access rights.
     fork_and_exit_parent(notesfile)
+    # we are only in the child now
     run_editor_and_protect(todaydir, notesfile)
 
 if __name__ == "__main__":
