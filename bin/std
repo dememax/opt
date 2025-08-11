@@ -131,3 +131,6 @@ if __name__ == "__main__":
 # * Add function to add images and other files into notes rst
 # * Add function to add links to previous and next days in notes rst
 # * Add possibility to put the content of user's file instead of the first section "Subj"
+# * Add CI with the help of GitHub Actions to use ruff, pylint, etc.
+# * Check for cyrillic "c" usage instead of latin.
+# * Check for invisible bytes in the rst (like BOM)
