@@ -126,10 +126,12 @@ if __name__ == "__main__":
     main()
 
 # TODO:
-# * Add function to sync journal with journals on external drives
-# * Add function to add toctree to other docs in todays folder
-# * Add function to add images and other files into notes rst
-# * Add function to add links to previous and next days in notes rst
+# * Add function to
+#       * sync journal with journals on external drives
+#       * add toctree to other docs in todays folder
+#       * add back link from files to the main Notes files (where it is referenced)
+#       * add images and other files into notes rst
+#       * add links to previous and next days in notes rst
 # * Add possibility to put the content of user's file instead of the first section "Subj"
 # * Add CI with the help of GitHub Actions to use ruff, pylint, etc.
 # * Check for cyrillic "c" usage instead of latin.
