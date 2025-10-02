@@ -127,7 +127,9 @@ if __name__ == "__main__":
 
 # TODO:
 # * Add function to
-#       * sync journal with journals on external drives
+#       * sync journal with journals on external drives - respecting read-only protection
+#               * if a folder/file doesn't exist - copy it
+#               * if there are differences - show the difference and ask
 #       * add toctree to other docs in todays folder
 #       * add back link from files to the main Notes files (where it is referenced)
 #       * add images and other files into notes rst
