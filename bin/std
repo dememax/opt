@@ -7,8 +7,19 @@ import os, os.path
 import stat
 import subprocess
 import datetime
+import shutil
 
 EDITOR_EXE = 'SciTE'
+EDITOR_ARGS = tuple()
+
+if shutil.which('code'):
+    EDITOR_EXE = 'code' # 'SciTE'
+    # '--wait' is not enough: event with '--wait', VS Code:checks
+    # if an instance is already running for the target folder.
+    # If so, it delegates the file to that instance and exits immediately.
+    # The CLI wrapper exits, so --wait has no effect — unless the file is opened in a new window.
+    EDITOR_ARGS = ('--wait','--new-window')
+
 ST_MODE_JOURNAL_FILEMODE_NORMAL = 'dr-xr-xr-x'
 JOURNAL_DIR_SIMPLE_NAME = "Journal"
 
@@ -97,8 +108,11 @@ def fork_and_exit_parent(notesfile):
 
 def run_editor_and_protect(todaydir, notesfile):
     """Run the editor, wait, and correct access rights after."""
-    print(f"In the child with PID {os.getpid()} and PPID {os.getppid()}. Running the editor '{EDITOR_EXE}' for '{notesfile}'...")
-    res = subprocess.run([EDITOR_EXE, notesfile]).returncode
+    print(f"In the child with PID {os.getpid()} and PPID {os.getppid()}. Running the editor '{EDITOR_EXE}' with {EDITOR_ARGS} for '{notesfile}'...")
+    cmd_with_args = [EDITOR_EXE, ]
+    cmd_with_args.extend(EDITOR_ARGS)
+    cmd_with_args.append(notesfile)
+    res = subprocess.run(cmd_with_args).returncode
     print()
     print(f"Result of running the editor '{EDITOR_EXE}' for '{notesfile}' is {res}")
     print(f"Protecting today's '{todaydir}' directory...")
